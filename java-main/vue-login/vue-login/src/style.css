@@ -1,0 +1,39 @@
+:root {
+  --bg-0: #0a0a0a;
+  --bg-1: #141414;
+  --bg-2: #1c1c1c;
+  --line: #2a2a2a;
+  --gold: #c9a96a;
+  --gold-soft: #d8c193;
+  --text: #ececec;
+  --text-dim: #8a8a8a;
+  --serif: "Cormorant Garamond", "Noto Serif SC", "Songti SC", Georgia, serif;
+  --sans: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html,
+body {
+  /* 用 min-height 而非 height：首页内容超出一屏时 body 可正常撑高滚动，
+     避免固定高度 + 垂直居中导致顶部内容被裁切、滚动不到 */
+  min-height: 100%;
+}
+
+body {
+  font-family: var(--sans);
+  background:
+    radial-gradient(circle at 50% -10%, #1f1f1f 0%, var(--bg-0) 55%),
+    var(--bg-0);
+  color: var(--text);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  padding: 24px;
+  -webkit-font-smoothing: antialiased;
+}

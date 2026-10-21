@@ -1,0 +1,29 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>AURELIA · 首页预览</title>
+  </head>
+  <body>
+    <div id="app"></div>
+    <!--
+      首页效果预览入口（仅供开发期查看 HomeView，不参与登录流程，可随时删除）。
+      正式入口仍是 index.html：登录成功后由 App.vue 切换到首页。
+    -->
+    <script type="module">
+      import { createApp, h } from 'vue'
+      import HomeView from './src/components/HomeView.vue'
+      import './src/style.css'
+
+      createApp({
+        render() {
+          return h(HomeView, {
+            username: '尊贵会员',
+            onLogout: () => console.log('预览模式：退出登录')
+          })
+        }
+      }).mount('#app')
+    </script>
+  </body>
+</html>
