@@ -26,7 +26,7 @@
     @authenticated="onAuthenticated"
   />
   <RegisterView v-else-if="view === 'register'" @login="view = 'login'" />
-  <HomeView v-else :username="username" @logout="onLogout" @admin="goAdminLogin" />
+  <HomeView v-else :username="username" :permission="permission" @logout="onLogout" @admin="goAdminLogin" />
 </template>
 
 <script setup>
@@ -40,6 +40,7 @@ import { getToken, getProfile, logoutUser, getAdminToken, setAdminToken, adminMe
 
 const view = ref('login')      // login | register | home（前台）
 const username = ref('')
+const permission = ref(1)       // 0 管理员，1 默认会员；控制首页「后台管理系统」入口
 const adminUser = ref('')      // 后台登录管理员昵称
 const adminReady = ref(false)  // 后台令牌是否已校验通过
 const route = ref('/')
@@ -76,7 +77,7 @@ onMounted(async () => {
     try {
       const res = await getProfile()
       if (res && res.code === 0 && res.data) {
-        username.value = res.data
+        applyProfile(res)
         view.value = 'home'
       } else {
         await logoutUser()
@@ -117,11 +118,25 @@ async function checkAdmin() {
 async function onAuthenticated() {
   try {
     const res = await getProfile()
-    username.value = (res && res.data) || ''
+    applyProfile(res)
   } catch {
     username.value = ''
+    permission.value = 1
   }
   view.value = 'home'
+}
+
+/** 解析 /user/me 返回的用户信息（兼容旧的字符串返回值） */
+function applyProfile(res) {
+  const info = res && res.data
+  if (!info) return
+  if (typeof info === 'string') {
+    username.value = info
+    permission.value = 1
+  } else {
+    username.value = info.username || ''
+    permission.value = info.permission ?? 1
+  }
 }
 
 async function onLogout() {

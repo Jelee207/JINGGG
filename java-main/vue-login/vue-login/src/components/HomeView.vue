@@ -17,7 +17,7 @@
           >{{ item.label }}</a>
         </nav>
 
-        <button class="admin-entry" type="button" @click="onAdmin">
+        <button v-if="permission === 0" class="admin-entry" type="button" @click="onAdmin">
           <span class="gear">◈</span>
           <span>后台管理系统</span>
         </button>
@@ -148,7 +148,9 @@ import { ref, computed, onMounted } from 'vue'
 import { getHomeFeed, searchAll } from '../api.js'
 
 const props = defineProps({
-  username: { type: String, default: '' }
+  username: { type: String, default: '' },
+  // 权限：0 管理员，1 默认会员；仅管理员（0）可见后台管理系统入口
+  permission: { type: Number, default: 1 }
 })
 const emit = defineEmits(['logout', 'admin'])
 
@@ -156,11 +158,7 @@ const emit = defineEmits(['logout', 'admin'])
 const menuOpen = ref(false)
 const activeNav = ref('home')
 const navItems = [
-  { key: 'home', label: '首页' },
-  { key: 'discover', label: '发现' },
-  { key: 'booking', label: '预订' },
-  { key: 'journal', label: '会刊' },
-  { key: 'about', label: '关于俱乐部' }
+  { key: 'home', label: '首页' }
 ]
 
 const initial = computed(() => {
@@ -356,7 +354,7 @@ function onLogout() {
   display: flex;
   gap: 30px;
   flex: 1;
-  justify-content: center;
+  justify-content: flex-start;
   flex-wrap: wrap;
 }
 

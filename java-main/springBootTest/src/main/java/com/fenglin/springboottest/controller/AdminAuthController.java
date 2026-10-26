@@ -4,8 +4,8 @@ import com.fenglin.springboottest.common.JwtBlacklist;
 import com.fenglin.springboottest.common.JwtUtil;
 import com.fenglin.springboottest.common.Result;
 import com.fenglin.springboottest.dto.AdminLoginRequest;
-import com.fenglin.springboottest.entity.SysAdmin;
-import com.fenglin.springboottest.service.AdminService;
+import com.fenglin.springboottest.entity.User;
+import com.fenglin.springboottest.service.UserService;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import org.springframework.http.HttpStatus;
@@ -19,23 +19,25 @@ import org.springframework.web.bind.annotation.RestController;
 
 /**
  * 后台管理系统鉴权接口。
- * 与前台会员登录（/api/login）相互独立：独立账号表 sys_admin、独立角色 ADMIN、且不需要验证码。
+ * 后台账号与普通会员同表（sys_user）：仅 permission=0 的账号可登录后台，
+ * 与前台会员登录（/api/login）相互独立（独立令牌），但共用用户表与权限字段。
  */
 @RestController
 @RequestMapping("/api/admin")
 public class AdminAuthController {
 
-    private final AdminService adminService;
+    private final UserService userService;
     private final JwtBlacklist blacklist;
 
-    public AdminAuthController(AdminService adminService, JwtBlacklist blacklist) {
-        this.adminService = adminService;
+    public AdminAuthController(UserService userService, JwtBlacklist blacklist) {
+        this.userService = userService;
         this.blacklist = blacklist;
     }
 
     /**
      * 后台登录：POST /api/admin/login
      * 请求体 { username, password }，无需验证码；成功返回 { token, username, nickname, role }
+     * 仅 permission=0 的账号可登录，明文校验密码。
      */
     @PostMapping("/login")
     public ResponseEntity<Result<Map<String, String>>> login(@RequestBody AdminLoginRequest req) {
@@ -46,12 +48,12 @@ public class AdminAuthController {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(Result.error("请输入密码"));
         }
         try {
-            SysAdmin admin = adminService.login(req.username().trim(), req.password());
-            String token = JwtUtil.generate(admin.getUsername(), JwtUtil.ROLE_ADMIN);
+            User user = userService.adminLogin(req.username().trim(), req.password());
+            String token = JwtUtil.generate(user.getUsername(), JwtUtil.ROLE_ADMIN);
             Map<String, String> data = new LinkedHashMap<>();
             data.put("token", token);
-            data.put("username", admin.getUsername());
-            data.put("nickname", admin.getNickname() == null ? admin.getUsername() : admin.getNickname());
+            data.put("username", user.getUsername());
+            data.put("nickname", user.getUsername());
             data.put("role", JwtUtil.ROLE_ADMIN);
             return ResponseEntity.ok(Result.success(data));
         } catch (RuntimeException e) {
@@ -70,10 +72,10 @@ public class AdminAuthController {
                     .body(Result.error("未登录或登录已过期"));
         }
         String username = JwtUtil.parseUsername(token);
-        SysAdmin admin = adminService.lambdaQuery().eq(SysAdmin::getUsername, username).one();
+        User user = userService.lambdaQuery().eq(User::getUsername, username).one();
         Map<String, String> data = new LinkedHashMap<>();
         data.put("username", username);
-        data.put("nickname", admin == null || admin.getNickname() == null ? username : admin.getNickname());
+        data.put("nickname", user == null || user.getUsername() == null ? username : user.getUsername());
         data.put("role", JwtUtil.ROLE_ADMIN);
         return ResponseEntity.ok(Result.success(data));
     }
