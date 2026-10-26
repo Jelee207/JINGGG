@@ -1,0 +1,234 @@
+<template>
+  <section class="adm-panel">
+    <div class="adm-panel-head">
+      <div>
+        <h2>分类入口管理</h2>
+        <p>维护前台首页「分类快捷入口」的图标、名称、描述与点击搜索词，排序值越大越靠前。</p>
+      </div>
+      <div class="adm-toolbar">
+        <button class="adm-btn ghost small" type="button" @click="load">刷新</button>
+        <button class="adm-btn small" type="button" @click="openCreate">+ 新增分类</button>
+      </div>
+    </div>
+
+    <div class="adm-panel-body">
+      <p v-if="error" class="adm-alert error">{{ error }}</p>
+      <p v-if="success" class="adm-alert success">{{ success }}</p>
+
+      <div v-if="loading" class="adm-loading">数据加载中…</div>
+      <div v-else-if="!rows.length" class="adm-empty">暂无分类，点击右上角「新增分类」创建</div>
+
+      <div v-else class="adm-table-wrap">
+        <table class="adm-table">
+          <thead>
+            <tr>
+              <th>ID</th>
+              <th>图标</th>
+              <th>名称</th>
+              <th>描述</th>
+              <th>搜索词</th>
+              <th>排序</th>
+              <th>状态</th>
+              <th>操作</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr v-for="r in rows" :key="r.id">
+              <td>{{ r.id }}</td>
+              <td class="icon">{{ r.icon }}</td>
+              <td>{{ r.name }}</td>
+              <td class="ellipsis">{{ r.summary }}</td>
+              <td>{{ r.keyword || '—' }}</td>
+              <td>{{ r.sortWeight }}</td>
+              <td>
+                <span class="adm-tag" :class="{ off: r.status !== 1 }">
+                  {{ r.status === 1 ? '启用' : '停用' }}
+                </span>
+              </td>
+              <td class="actions">
+                <button class="adm-btn ghost small" type="button" @click="openEdit(r)">编辑</button>
+                <button class="adm-btn danger small" type="button" @click="remove(r)">删除</button>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- 新增 / 编辑弹窗 -->
+    <div v-if="editing" class="adm-mask" @click.self="editing = false">
+      <div class="adm-modal">
+        <div class="adm-modal-head">
+          <h3>{{ form.id ? '编辑分类' : '新增分类' }}</h3>
+          <button class="adm-close" type="button" @click="editing = false">✕</button>
+        </div>
+        <div class="adm-modal-body">
+          <div class="adm-form">
+            <div class="adm-field">
+              <label>分类名称 *</label>
+              <input v-model.trim="form.name" class="adm-input" placeholder="如：旅行栖居" />
+            </div>
+            <div class="adm-field">
+              <label>图标字符</label>
+              <input v-model.trim="form.icon" class="adm-input" placeholder="如：✦ ❖ ◈" />
+              <span class="hint">留空默认 ✦，可直接使用 emoji 或符号</span>
+            </div>
+            <div class="adm-field">
+              <label>点击搜索词</label>
+              <input v-model.trim="form.keyword" class="adm-input" placeholder="点击该分类时执行的搜索词" />
+            </div>
+            <div class="adm-field">
+              <label>排序权重</label>
+              <input v-model.number="form.sortWeight" class="adm-input" type="number" placeholder="0" />
+              <span class="hint">数值越大越靠前</span>
+            </div>
+            <div class="adm-field full">
+              <label>一句话描述</label>
+              <input v-model.trim="form.summary" class="adm-input" placeholder="如：全球奢华酒店礼遇" />
+            </div>
+            <div class="adm-field full">
+              <label>状态</label>
+              <select v-model.number="form.status" class="adm-select">
+                <option :value="1">启用（首页展示）</option>
+                <option :value="0">停用（首页隐藏）</option>
+              </select>
+            </div>
+          </div>
+        </div>
+        <div class="adm-modal-foot">
+          <button class="adm-btn ghost" type="button" @click="editing = false">取消</button>
+          <button class="adm-btn" type="button" :disabled="saving" @click="save">
+            {{ saving ? '保存中…' : '保存' }}
+          </button>
+        </div>
+      </div>
+    </div>
+  </section>
+</template>
+
+<script setup>
+import { ref, reactive, onMounted } from 'vue'
+import { listCategories, createCategory, updateCategory, deleteCategory } from '../api.js'
+
+const emit = defineEmits(['unauthorized'])
+
+const rows = ref([])
+const loading = ref(false)
+const saving = ref(false)
+const error = ref('')
+const success = ref('')
+const editing = ref(false)
+
+const emptyForm = () => ({
+  id: null,
+  name: '',
+  icon: '✦',
+  summary: '',
+  keyword: '',
+  sortWeight: 0,
+  status: 1
+})
+const form = reactive(emptyForm())
+
+async function load() {
+  loading.value = true
+  error.value = ''
+  try {
+    rows.value = await listCategories()
+  } catch (e) {
+    if (e.unauthorized) return emit('unauthorized')
+    error.value = e.message || '分类列表加载失败'
+  } finally {
+    loading.value = false
+  }
+}
+
+function guard(e) {
+  if (e.unauthorized) {
+    emit('unauthorized')
+    return true
+  }
+  error.value = e.message || '操作失败'
+  return false
+}
+
+function openCreate() {
+  error.value = ''
+  success.value = ''
+  Object.assign(form, emptyForm())
+  editing.value = true
+}
+
+function openEdit(row) {
+  error.value = ''
+  success.value = ''
+  Object.assign(form, emptyForm(), {
+    id: row.id,
+    name: row.name || '',
+    icon: row.icon || '✦',
+    summary: row.summary || '',
+    keyword: row.keyword || '',
+    sortWeight: row.sortWeight ?? 0,
+    status: row.status ?? 1
+  })
+  editing.value = true
+}
+
+async function save() {
+  if (!form.name) {
+    error.value = '请填写分类名称'
+    return
+  }
+  saving.value = true
+  error.value = ''
+  try {
+    const body = {
+      name: form.name,
+      icon: form.icon || '✦',
+      summary: form.summary || '',
+      keyword: form.keyword || '',
+      sortWeight: form.sortWeight || 0,
+      status: form.status
+    }
+    if (form.id) await updateCategory(form.id, { ...body, id: form.id })
+    else await createCategory(body)
+    success.value = form.id ? '分类已更新' : '分类已创建'
+    editing.value = false
+    await load()
+  } catch (e) {
+    guard(e)
+  } finally {
+    saving.value = false
+  }
+}
+
+async function remove(row) {
+  if (!confirm(`确定删除分类「${row.name}」？删除后首页将不再显示该入口。`)) return
+  error.value = ''
+  success.value = ''
+  try {
+    await deleteCategory(row.id)
+    success.value = `分类「${row.name}」已删除`
+    await load()
+  } catch (e) {
+    guard(e)
+  }
+}
+
+onMounted(load)
+</script>
+
+<style scoped>
+.icon {
+  font-size: 16px;
+  color: var(--gold);
+}
+
+.ellipsis {
+  max-width: 240px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--text-dim);
+}
+</style>

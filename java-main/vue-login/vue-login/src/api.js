@@ -11,6 +11,37 @@ const API_BASE = '/api'
 
 // 登录令牌本地存储（localStorage）
 const TOKEN_KEY = 'aurelia_token'
+// 后台管理系统令牌：与前台会员令牌分开存放，登录后台不影响前台会话
+const ADMIN_TOKEN_KEY = 'aurelia_admin_token'
+
+/**
+ * 通用请求：统一处理网络异常、HTTP 错误码与后端 Result 结构。
+ * @returns {Promise<any>} 成功返回 Result.data；失败抛 Error（message 取后端提示）
+ */
+async function request(path, { method = 'GET', body = null, admin = false } = {}) {
+  const token = admin ? localStorage.getItem(ADMIN_TOKEN_KEY) : localStorage.getItem(TOKEN_KEY)
+  const headers = { 'Content-Type': 'application/json' }
+  if (token) headers.Authorization = `Bearer ${token}`
+
+  let res
+  try {
+    res = await fetch(`${API_BASE}${path}`, {
+      method,
+      headers,
+      body: body ? JSON.stringify(body) : undefined
+    })
+  } catch {
+    throw new Error('无法连接后端，请确认服务已启动（默认 http://localhost:8080）')
+  }
+
+  const json = await res.json().catch(() => null)
+  if (!res.ok || (json && json.code !== 0)) {
+    const msg = (json && json.message) || '请求失败，请重试'
+    if (res.status === 401) throw Object.assign(new Error(msg), { unauthorized: true })
+    throw new Error(msg)
+  }
+  return json ? json.data : null
+}
 
 export function getToken() {
   return localStorage.getItem(TOKEN_KEY) || ''
@@ -19,6 +50,15 @@ export function getToken() {
 export function setToken(token) {
   if (token) localStorage.setItem(TOKEN_KEY, token)
   else localStorage.removeItem(TOKEN_KEY)
+}
+
+export function getAdminToken() {
+  return localStorage.getItem(ADMIN_TOKEN_KEY) || ''
+}
+
+export function setAdminToken(token) {
+  if (token) localStorage.setItem(ADMIN_TOKEN_KEY, token)
+  else localStorage.removeItem(ADMIN_TOKEN_KEY)
 }
 
 /**
@@ -110,11 +150,14 @@ export async function getProfile() {
   return res.json()
 }
 
+/* ============================================================================
+ * 首页对外接口（数据源同后台管理）
+ * ==========================================================================*/
+
 /**
- * 首页内容流（预留后端端口）
- * 后端约定：GET /api/home/feed，请求头 Authorization: Bearer <token>
- * 返回 Result<{ categories: Category[], posts: Post[] }>
- * 后端未就绪时返回 null，前端自动回退到本地演示数据。
+ * 首页内容流（对接后端 GET /api/home/feed）
+ * 返回 Result<{ categories, posts, hotKeywords }>
+ * 后端未就绪（返回 null）时由页面使用本地演示数据。
  */
 export async function getHomeFeed() {
   try {
@@ -169,4 +212,88 @@ export async function logoutUser() {
   } finally {
     setToken('')
   }
+}
+
+/* ============================================================================
+ * 后台管理系统接口（token 与前台会员相互独立）
+ * ==========================================================================*/
+
+/**
+ * 后台登录：POST /api/admin/login（无验证码）
+ * 成功返回 { token, username, nickname, role }，并写入本地 admin token。
+ */
+export async function adminLogin(username, password) {
+  const data = await request('/admin/login', {
+    method: 'POST',
+    body: { username, password }
+  })
+  if (data && data.token) setAdminToken(data.token)
+  return data
+}
+
+/** 当前管理员信息：GET /api/admin/me */
+export function adminMe() {
+  return request('/admin/me', { admin: true })
+}
+
+/** 后台退出：POST /api/admin/logout */
+export async function adminLogout() {
+  try {
+    await request('/admin/logout', { method: 'POST', admin: true })
+  } catch {
+    // 忽略网络错误，仍以本地退出为准
+  } finally {
+    setAdminToken('')
+  }
+}
+
+/** 后台概览统计：GET /api/admin/home/overview */
+export function getAdminOverview() {
+  return request('/admin/home/overview', { admin: true })
+}
+
+/* ---------------- 首页分类管理 ---------------- */
+export function listCategories() {
+  return request('/admin/home/categories', { admin: true })
+}
+export function createCategory(body) {
+  return request('/admin/home/categories', { method: 'POST', body, admin: true })
+}
+export function updateCategory(id, body) {
+  return request(`/admin/home/categories/${id}`, { method: 'PUT', body, admin: true })
+}
+export function deleteCategory(id) {
+  return request(`/admin/home/categories/${id}`, { method: 'DELETE', admin: true })
+}
+
+/* ---------------- 首页精选内容管理 ---------------- */
+export function listPosts(params = {}) {
+  const qs = new URLSearchParams()
+  if (params.keyword) qs.set('keyword', params.keyword)
+  if (params.category) qs.set('category', params.category)
+  const query = qs.toString()
+  return request(`/admin/home/posts${query ? '?' + query : ''}`, { admin: true })
+}
+export function createPost(body) {
+  return request('/admin/home/posts', { method: 'POST', body, admin: true })
+}
+export function updatePost(id, body) {
+  return request(`/admin/home/posts/${id}`, { method: 'PUT', body, admin: true })
+}
+export function deletePost(id) {
+  return request(`/admin/home/posts/${id}`, { method: 'DELETE', admin: true })
+}
+
+/* ---------------- 热门搜索词管理 ---------------- */
+export function listKeywords() {
+  return request('/admin/home/keywords', { admin: true })
+}
+export function createKeyword(body) {
+  return request('/admin/home/keywords', { method: 'POST', body, admin: true })
+}
+export function updateKeyword(id, body) {
+  return request(`/admin/home/keywords/${id}`, { method: 'PUT', body, admin: true })
+}
+export function deleteKeyword(id) {
+  return request(`/admin/home/keywords/${id}`, { method: 'DELETE', admin: true })
 }

@@ -11,7 +11,7 @@
  Target Server Version : 80039 (8.0.39)
  File Encoding         : 65001
 
- Date: 16/10/2026 16:12:13
+ Date: 26/10/2026 11:54:02
 */
 
 SET NAMES utf8mb4;
@@ -33,12 +33,12 @@ CREATE TABLE `home_category`  (
   `updated_at` datetime NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
   PRIMARY KEY (`id`) USING BTREE,
   INDEX `idx_status_sort`(`status` ASC, `sort_weight` ASC) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 7 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '首页分类表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 9 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '首页分类表' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of home_category
 -- ----------------------------
-INSERT INTO `home_category` VALUES (1, '❖', '私人礼遇', '管家式定制服务', '私人礼遇', 60, 1, '2026-10-16 16:04:31', '2026-10-16 16:04:31');
+INSERT INTO `home_category` VALUES (1, '#', '私人礼遇', '管家式定制服务', '私人礼遇', 60, 1, '2026-10-16 16:04:31', '2026-10-26 11:39:36');
 INSERT INTO `home_category` VALUES (2, '◈', '餐饮甄选', '米其林主厨餐桌', '餐饮', 55, 1, '2026-10-16 16:04:31', '2026-10-16 16:04:31');
 INSERT INTO `home_category` VALUES (3, '✦', '旅行栖居', '全球奢华酒店礼遇', '旅行', 50, 1, '2026-10-16 16:04:31', '2026-10-16 16:04:31');
 INSERT INTO `home_category` VALUES (4, '◆', '艺术文化', '私人画廊与沙龙', '艺术', 45, 1, '2026-10-16 16:04:31', '2026-10-16 16:04:31');
@@ -60,7 +60,7 @@ CREATE TABLE `home_hot_keyword`  (
   PRIMARY KEY (`id`) USING BTREE,
   UNIQUE INDEX `uk_keyword`(`keyword` ASC) USING BTREE,
   INDEX `idx_status_sort`(`status` ASC, `sort_weight` ASC) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 7 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '首页热门搜索词表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 7 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '首页热门搜索词表' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of home_hot_keyword
@@ -97,7 +97,7 @@ CREATE TABLE `home_post`  (
   INDEX `idx_category`(`category` ASC) USING BTREE,
   INDEX `idx_status_publish`(`status` ASC, `publish_at` ASC) USING BTREE,
   INDEX `idx_title`(`title` ASC) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 11 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '首页精选内容表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 11 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '首页精选内容表' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of home_post
@@ -143,7 +143,7 @@ CREATE TABLE `mb_discount`  (
   PRIMARY KEY (`id`) USING BTREE,
   INDEX `idx_category`(`category` ASC) USING BTREE,
   INDEX `idx_status_sort`(`status` ASC, `sort_weight` ASC) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 9 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '会员专属折扣表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 9 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '会员专属折扣表' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of mb_discount
@@ -182,7 +182,7 @@ CREATE TABLE `mb_goods`  (
   PRIMARY KEY (`id`) USING BTREE,
   INDEX `idx_category`(`category` ASC) USING BTREE,
   INDEX `idx_status_sort`(`status` ASC, `sort_weight` ASC) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 9 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '会员专属好物表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 9 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '会员专属好物表' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of mb_goods
@@ -212,11 +212,34 @@ CREATE TABLE `mb_user_coupon`  (
   UNIQUE INDEX `uk_coupon_code`(`coupon_code` ASC) USING BTREE,
   INDEX `idx_user_status`(`user_id` ASC, `status` ASC) USING BTREE,
   INDEX `idx_discount`(`discount_id` ASC) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '会员卡包表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '会员卡包表' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of mb_user_coupon
 -- ----------------------------
+
+-- ----------------------------
+-- Table structure for sys_admin
+-- ----------------------------
+DROP TABLE IF EXISTS `sys_admin`;
+CREATE TABLE `sys_admin`  (
+  `id` bigint NOT NULL AUTO_INCREMENT COMMENT '主键',
+  `username` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL COMMENT '登录账号（唯一）',
+  `password` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL COMMENT '密码（加盐 SHA-256 哈希）',
+  `salt` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL COMMENT '密码盐值',
+  `nickname` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL DEFAULT '' COMMENT '显示昵称',
+  `status` tinyint NOT NULL DEFAULT 1 COMMENT '状态：1 启用 0 停用',
+  `last_login_at` datetime NULL DEFAULT NULL COMMENT '最后登录时间',
+  `created_at` datetime NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  `updated_at` datetime NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+  PRIMARY KEY (`id`) USING BTREE,
+  UNIQUE INDEX `uk_admin_username`(`username` ASC) USING BTREE
+) ENGINE = InnoDB AUTO_INCREMENT = 2 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '后台管理员账号表' ROW_FORMAT = Dynamic;
+
+-- ----------------------------
+-- Records of sys_admin
+-- ----------------------------
+INSERT INTO `sys_admin` VALUES (1, 'admin', '457a2ff654a76ac5a19ce5a4e04e5c54ad717e94712db4dc28d54c03d13c452b', 'a1b2c3d4e5f60718293a4b5c6d7e8f90', '系统管理员', 1, '2026-10-26 11:39:05', '2026-10-26 11:24:02', '2026-10-26 11:39:05');
 
 -- ----------------------------
 -- Table structure for sys_user
