@@ -17,6 +17,11 @@
           >{{ item.label }}</a>
         </nav>
 
+        <button class="admin-entry" type="button" @click="onAdmin">
+          <span class="gear">◈</span>
+          <span>后台管理系统</span>
+        </button>
+
         <div class="user" @mouseleave="menuOpen = false">
           <button class="user-btn" type="button" @click="menuOpen = !menuOpen">
             <span class="avatar">{{ initial }}</span>
@@ -94,7 +99,7 @@
           :key="c.name"
           href="#"
           class="cat"
-          @click.prevent="quickSearch(c.name)"
+          @click.prevent="quickSearch(c.keyword || c.name)"
         >
           <span class="cat-icon">{{ c.icon }}</span>
           <span class="cat-name">{{ c.name }}</span>
@@ -145,7 +150,7 @@ import { getHomeFeed, searchAll } from '../api.js'
 const props = defineProps({
   username: { type: String, default: '' }
 })
-const emit = defineEmits(['logout'])
+const emit = defineEmits(['logout', 'admin'])
 
 /* ---------------- 导航栏 ---------------- */
 const menuOpen = ref(false)
@@ -178,10 +183,16 @@ function onNav(key) {
   menuOpen.value = false
 }
 
+/* 跳转后台管理系统（见 App.vue -> goAdminLogin） */
+function onAdmin() {
+  menuOpen.value = false
+  emit('admin')
+}
+
 /* ---------------- 搜索栏 ---------------- */
 const keyword = ref('')
 const searched = ref('')
-const hotKeywords = ['京都赏枫', '米其林晚宴', '私享游艇', '艺术沙龙']
+const hotKeywords = ref(['京都赏枫', '米其林晚宴', '私享游艇', '艺术沙龙'])
 
 async function onSearch() {
   searched.value = keyword.value
@@ -266,7 +277,7 @@ const posts = ref([
 ])
 
 onMounted(async () => {
-  // 预留后端接口：后端就绪后走 GET /api/home/feed 获取真实数据，见 src/api.js -> getHomeFeed
+  // 数据源即后台管理系统维护内容：GET /api/home/feed，见 src/api.js -> getHomeFeed
   const feed = await getHomeFeed()
   if (feed) {
     if (Array.isArray(feed.categories) && feed.categories.length) {
@@ -274,6 +285,9 @@ onMounted(async () => {
     }
     if (Array.isArray(feed.posts) && feed.posts.length) {
       posts.value = feed.posts
+    }
+    if (Array.isArray(feed.hotKeywords) && feed.hotKeywords.length) {
+      hotKeywords.value = feed.hotKeywords
     }
   }
 })
@@ -363,6 +377,38 @@ function onLogout() {
 .links a.active {
   color: var(--gold-soft);
   border-bottom-color: var(--gold);
+}
+
+/* 后台管理系统入口按钮 */
+.admin-entry {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 16px;
+  background: transparent;
+  border: 1px solid var(--gold);
+  border-radius: 2px;
+  color: var(--gold-soft);
+  font-family: var(--sans);
+  font-size: 12.5px;
+  letter-spacing: 2px;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background 0.25s ease, color 0.25s ease, transform 0.1s ease;
+}
+
+.admin-entry .gear {
+  font-size: 11px;
+  color: var(--gold);
+}
+
+.admin-entry:hover {
+  background: rgba(201, 169, 106, 0.1);
+  color: var(--gold);
+}
+
+.admin-entry:active {
+  transform: translateY(1px);
 }
 
 /* 用户菜单 */

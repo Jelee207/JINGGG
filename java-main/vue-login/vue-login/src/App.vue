@@ -1,39 +1,119 @@
 <template>
+  <!-- ================= 后台管理系统 ================= -->
+  <template v-if="route === '/admin'">
+    <AdminView
+      v-if="adminReady"
+      :username="adminUser"
+      @logout="onAdminLogout"
+      @back="goFront"
+    />
+    <div v-else class="adm-empty">正在校验后台登录状态…</div>
+  </template>
+
+  <template v-else-if="route === '/admin/login'">
+    <AdminLoginView
+      v-if="!adminReady"
+      @authenticated="onAdminLogin"
+      @back="goFront"
+    />
+    <div v-else class="adm-empty">正在进入后台管理系统…</div>
+  </template>
+
+  <!-- ================= 前台站点 ================= -->
   <LoginView
-    v-if="view === 'login'"
+    v-else-if="view === 'login'"
     @register="view = 'register'"
     @authenticated="onAuthenticated"
   />
   <RegisterView v-else-if="view === 'register'" @login="view = 'login'" />
-  <HomeView v-else :username="username" @logout="onLogout" />
+  <HomeView v-else :username="username" @logout="onLogout" @admin="goAdminLogin" />
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, watch } from 'vue'
 import LoginView from './components/LoginView.vue'
 import RegisterView from './components/RegisterView.vue'
 import HomeView from './components/HomeView.vue'
-import { getToken, getProfile, logoutUser } from './api.js'
+import AdminLoginView from './components/AdminLoginView.vue'
+import AdminView from './components/AdminView.vue'
+import { getToken, getProfile, logoutUser, getAdminToken, setAdminToken, adminMe } from './api.js'
 
-const view = ref('login')
+const view = ref('login')      // login | register | home（前台）
 const username = ref('')
+const adminUser = ref('')      // 后台登录管理员昵称
+const adminReady = ref(false)  // 后台令牌是否已校验通过
+const route = ref('/')
 
-// 刷新页面时，若本地仍有 token，则向 /api/user/me 校验是否仍有效，有效则直接进入已登录视图
+/* ---------------- 简易 hash 路由 ---------------- */
+function normalize(hash) {
+  const h = String(hash || '').replace(/^#/, '').replace(/\/+$/, '') || '/'
+  return h === '/admin' || h === '/admin/login' || h === '/register' ? h : '/'
+}
+
+function goAdminLogin() {
+  location.hash = '#/admin/login'
+}
+
+function goFront() {
+  location.hash = '#/'
+}
+
+function applyRoute() {
+  const r = normalize(location.hash)
+  route.value = r
+  document.body.classList.toggle('admin-mode', r === '/admin')
+  if (r === '/admin/login' && adminReady.value) {
+    location.hash = '#/admin'
+  } else if (r === '/admin' && !adminReady.value) {
+    location.hash = '#/admin/login'
+  }
+}
+
+/* ---------------- 初始化 ---------------- */
 onMounted(async () => {
-  if (!getToken()) return
-  try {
-    const res = await getProfile()
-    if (res && res.code === 0 && res.data) {
-      username.value = res.data
-      view.value = 'home'
-    } else {
+  // 1) 前台会话：本地有会员令牌则向后端校验，有效直接进入首页
+  if (getToken()) {
+    try {
+      const res = await getProfile()
+      if (res && res.code === 0 && res.data) {
+        username.value = res.data
+        view.value = 'home'
+      } else {
+        await logoutUser()
+      }
+    } catch {
       await logoutUser()
     }
-  } catch {
-    await logoutUser()
   }
+
+  // 2) 后台会话：本地有管理员令牌则校验，有效则直接进入后台
+  await checkAdmin()
+
+  // 3) 路由：支持直接访问 #/admin、#/admin/login 等地址
+  applyRoute()
+  window.addEventListener('hashchange', applyRoute)
 })
 
+watch(() => route.value, (r) => {
+  document.body.classList.toggle('admin-mode', r === '/admin')
+})
+
+async function checkAdmin() {
+  if (!getAdminToken()) {
+    adminReady.value = false
+    return
+  }
+  try {
+    const data = await adminMe()
+    adminUser.value = (data && (data.nickname || data.username)) || ''
+    adminReady.value = true
+  } catch {
+    setAdminToken('')
+    adminReady.value = false
+  }
+}
+
+/* ---------------- 前台事件 ---------------- */
 async function onAuthenticated() {
   try {
     const res = await getProfile()
@@ -48,5 +128,18 @@ async function onLogout() {
   await logoutUser()
   username.value = ''
   view.value = 'login'
+}
+
+/* ---------------- 后台事件 ---------------- */
+async function onAdminLogin() {
+  await checkAdmin()
+  if (adminReady.value) location.hash = '#/admin'
+}
+
+function onAdminLogout() {
+  setAdminToken('')
+  adminUser.value = ''
+  adminReady.value = false
+  location.hash = '#/admin/login'
 }
 </script>
