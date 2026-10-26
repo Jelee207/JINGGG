@@ -197,6 +197,51 @@ export async function searchAll(keyword) {
   }
 }
 
+/* ============================================================================
+ * 竞拍接口（演示数据由 Spring Boot 内存提供，后端未就绪时前端回退本地 mock）
+ * ==========================================================================*/
+
+/**
+ * 拍品列表：GET /api/auction/lots
+ * 返回 Result<Lot[]>；后端未就绪返回 null，AuctionView 回退到本地演示数据。
+ */
+export async function getAuctionLots() {
+  try {
+    const token = getToken()
+    const res = await fetch(`${API_BASE}/auction/lots`, {
+      method: 'GET',
+      headers: token ? { Authorization: `Bearer ${token}` } : {}
+    })
+    if (!res.ok) return null
+    const json = await res.json()
+    return json && json.code === 0 && Array.isArray(json.data) ? json.data : null
+  } catch {
+    return null // 后端未启动时静默降级
+  }
+}
+
+/**
+ * 出价：POST /api/auction/bid  body { lotId, amount }
+ * 返回 Result<Lot>（更新后的拍品）；失败抛错，由页面本地兜底。
+ */
+export async function placeBid(lotId, amount) {
+  const token = getToken()
+  const res = await fetch(`${API_BASE}/auction/bid`, {
+    method: 'POST',
+    headers: token
+      ? { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` }
+      : { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ lotId, amount })
+  })
+  if (!res.ok) {
+    const data = await res.json().catch(() => ({}))
+    throw new Error(data.message || '出价失败')
+  }
+  const json = await res.json()
+  if (json && json.code === 0 && json.data) return json.data
+  throw new Error((json && json.message) || '出价失败')
+}
+
 /**
  * 注销：POST /api/logout（携带当前 JWT），成功后清空本地令牌。
  */

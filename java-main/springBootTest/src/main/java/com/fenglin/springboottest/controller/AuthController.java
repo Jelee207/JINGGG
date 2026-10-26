@@ -6,8 +6,11 @@ import com.fenglin.springboottest.common.Result;
 import com.fenglin.springboottest.dto.CaptchaVO;
 import com.fenglin.springboottest.dto.LoginRequest;
 import com.fenglin.springboottest.dto.RegisterRequest;
+import com.fenglin.springboottest.entity.User;
 import com.fenglin.springboottest.service.CaptchaService;
 import com.fenglin.springboottest.service.UserService;
+import com.fenglin.springboottest.service.impl.UserServiceImpl;
+import java.util.LinkedHashMap;
 import java.util.Map;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -81,16 +84,23 @@ public class AuthController {
         return ResponseEntity.ok(Result.success(Map.of("token", token)));
     }
 
-    /** 获取当前登录用户：GET /api/user/me（需 Authorization: Bearer <token>） */
+    /** 获取当前登录用户：GET /api/user/me（需 Authorization: Bearer <token>）
+     *  返回 { username, permission }，permission：0 管理员，1 默认会员 */
     @GetMapping("/user/me")
-    public ResponseEntity<Result<String>> me(
+    public ResponseEntity<Result<Map<String, Object>>> me(
             @RequestHeader(value = "Authorization", required = false) String auth) {
         String token = extractToken(auth);
         if (token == null || !JwtUtil.validate(token)) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
                     .body(Result.error("未登录或登录已过期"));
         }
-        return ResponseEntity.ok(Result.success(JwtUtil.parseUsername(token)));
+        String username = JwtUtil.parseUsername(token);
+        User user = userService.lambdaQuery().eq(User::getUsername, username).one();
+        Map<String, Object> data = new LinkedHashMap<>();
+        data.put("username", username);
+        data.put("permission", user != null && user.getPermission() != null
+                ? user.getPermission() : UserServiceImpl.PERMISSION_DEFAULT);
+        return ResponseEntity.ok(Result.success(data));
     }
 
     /** 注销：POST /api/logout，将当前令牌加入黑名单 */

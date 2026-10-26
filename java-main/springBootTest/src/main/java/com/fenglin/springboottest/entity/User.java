@@ -11,8 +11,10 @@ public class User {
     @TableId(type = IdType.AUTO)
     private Long id;
     private String username;
-    private String password; // 加盐 SHA-256 哈希
-    private String salt;
+    /** 密码（明文存储，按需求不加密） */
+    private String password;
+    /** 权限：0 管理员，1 默认会员（注册默认 1） */
+    private Integer permission;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
 
@@ -40,12 +42,12 @@ public class User {
         this.password = password;
     }
 
-    public String getSalt() {
-        return salt;
+    public Integer getPermission() {
+        return permission;
     }
 
-    public void setSalt(String salt) {
-        this.salt = salt;
+    public void setPermission(Integer permission) {
+        this.permission = permission;
     }
 
     public LocalDateTime getCreatedAt() {

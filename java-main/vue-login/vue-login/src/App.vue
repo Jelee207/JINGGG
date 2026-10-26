@@ -26,7 +26,23 @@
     @authenticated="onAuthenticated"
   />
   <RegisterView v-else-if="view === 'register'" @login="view = 'login'" />
-  <HomeView v-else :username="username" @logout="onLogout" @admin="goAdminLogin" />
+  <HomeView
+    v-else-if="view === 'home'"
+    :username="username"
+    :permission="permission"
+    @nav="onFrontNav"
+    @logout="onLogout"
+    @admin="goAdminLogin"
+  />
+  <AuctionView
+    v-else-if="view === 'auction'"
+    :username="username"
+    :permission="permission"
+    @nav="onFrontNav"
+    @logout="onLogout"
+    @admin="goAdminLogin"
+  />
+  <HomeView v-else :username="username" :permission="permission" @logout="onLogout" @admin="goAdminLogin" />
 </template>
 
 <script setup>
@@ -34,12 +50,14 @@ import { ref, onMounted, watch } from 'vue'
 import LoginView from './components/LoginView.vue'
 import RegisterView from './components/RegisterView.vue'
 import HomeView from './components/HomeView.vue'
+import AuctionView from './components/AuctionView.vue'
 import AdminLoginView from './components/AdminLoginView.vue'
 import AdminView from './components/AdminView.vue'
 import { getToken, getProfile, logoutUser, getAdminToken, setAdminToken, adminMe } from './api.js'
 
 const view = ref('login')      // login | register | home（前台）
 const username = ref('')
+const permission = ref(1)       // 0 管理员，1 默认会员；控制首页「后台管理系统」入口
 const adminUser = ref('')      // 后台登录管理员昵称
 const adminReady = ref(false)  // 后台令牌是否已校验通过
 const route = ref('/')
@@ -76,7 +94,7 @@ onMounted(async () => {
     try {
       const res = await getProfile()
       if (res && res.code === 0 && res.data) {
-        username.value = res.data
+        applyProfile(res)
         view.value = 'home'
       } else {
         await logoutUser()
@@ -117,17 +135,37 @@ async function checkAdmin() {
 async function onAuthenticated() {
   try {
     const res = await getProfile()
-    username.value = (res && res.data) || ''
+    applyProfile(res)
   } catch {
     username.value = ''
+    permission.value = 1
   }
   view.value = 'home'
+}
+
+/** 解析 /user/me 返回的用户信息（兼容旧的字符串返回值） */
+function applyProfile(res) {
+  const info = res && res.data
+  if (!info) return
+  if (typeof info === 'string') {
+    username.value = info
+    permission.value = 1
+  } else {
+    username.value = info.username || ''
+    permission.value = info.permission ?? 1
+  }
 }
 
 async function onLogout() {
   await logoutUser()
   username.value = ''
   view.value = 'login'
+}
+
+/* 前台导航：首页 / 竞拍 切换（由 TopNav 的 @nav 触发） */
+function onFrontNav(key) {
+  if (key === 'home') view.value = 'home'
+  else if (key === 'auction') view.value = 'auction'
 }
 
 /* ---------------- 后台事件 ---------------- */

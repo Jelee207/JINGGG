@@ -1,7 +1,7 @@
 /*
  Navicat Premium Dump SQL
 
- Source Server         : test
+ Source Server         : localhost_3306
  Source Server Type    : MySQL
  Source Server Version : 80039 (8.0.39)
  Source Host           : localhost:3306
@@ -11,7 +11,7 @@
  Target Server Version : 80039 (8.0.39)
  File Encoding         : 65001
 
- Date: 26/10/2026 11:56:31
+ Date: 30/10/2026 16:38:58
 */
 
 SET NAMES utf8mb4;
@@ -234,7 +234,7 @@ CREATE TABLE `sys_admin`  (
   `updated_at` datetime NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
   PRIMARY KEY (`id`) USING BTREE,
   UNIQUE INDEX `uk_admin_username`(`username` ASC) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 2 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '后台管理员账号表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 2 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '后台管理员账号表' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of sys_admin
@@ -249,20 +249,20 @@ CREATE TABLE `sys_user`  (
   `id` bigint NOT NULL AUTO_INCREMENT COMMENT '主键',
   `username` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL COMMENT '用户名（唯一）',
   `password` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL COMMENT '密码（加盐 SHA-256 哈希）',
-  `salt` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL COMMENT '密码盐值',
   `member_level` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL DEFAULT 'GOLD' COMMENT '会员等级',
   `points` int NOT NULL DEFAULT 0 COMMENT '会员积分',
   `member_expire_at` date NULL DEFAULT NULL COMMENT '会员有效期',
   `created_at` datetime NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
   `updated_at` datetime NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+  `permission` int NOT NULL DEFAULT 1 COMMENT '权限：0 管理员，1 默认会员',
   PRIMARY KEY (`id`) USING BTREE,
   UNIQUE INDEX `uk_username`(`username` ASC) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 3 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '系统用户表' ROW_FORMAT = DYNAMIC;
+) ENGINE = InnoDB AUTO_INCREMENT = 4 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '系统用户表' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of sys_user
 -- ----------------------------
-INSERT INTO `sys_user` VALUES (1, 'admin', '6a65e9fc69984d6dbb31378c4c63fbb52ca164cd2b20215190aae7e5369b1a3c', '0f1e2d3c4b5a69788796a5b4c3d2e1f0', 'GOLD', 12480, '2027-12-31', '2026-10-12 10:48:07', '2026-10-16 15:56:19');
-INSERT INTO `sys_user` VALUES (2, 'yuzhouchangwan', 'ce1ff2965a70baf37cb83451f16febf801b4e8042828188624e244b662a07cd3', '13a338906894022bd37dea1ea648cbf6', 'GOLD', 12480, '2027-12-31', '2026-10-12 11:04:12', '2026-10-16 15:56:19');
+INSERT INTO `sys_user` VALUES (1, 'admin', 'admin123', 'GOLD', 12480, '2027-12-31', '2026-10-12 10:48:07', '2026-10-30 15:55:06', 0);
+INSERT INTO `sys_user` VALUES (3, 'YZCW', '123456', 'GOLD', 0, NULL, '2026-10-30 15:57:14', '2026-10-30 15:58:45', 0);
 
 SET FOREIGN_KEY_CHECKS = 1;

@@ -23,7 +23,7 @@ public class JwtAuthFilter extends OncePerRequestFilter {
 
     private static final List<String> WHITELIST = List.of(
             "/api/captcha", "/api/login", "/api/auth/register", "/api/admin/login",
-            "/api/home/feed", "/api/search");
+            "/api/home/feed", "/api/search", "/api/auction/lots");
 
     public JwtAuthFilter(JwtBlacklist blacklist) {
         this.blacklist = blacklist;
