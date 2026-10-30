@@ -1,14 +1,45 @@
 <template>
   <div class="home">
-    <!-- ================= 顶部导航栏（复用 TopNav） ================= -->
-    <TopNav
-      :username="username"
-      :permission="permission"
-      active="home"
-      @nav="(k) => emit('nav', k)"
-      @logout="onLogout"
-      @admin="onAdmin"
-    />
+    <!-- ================= 顶部导航栏 ================= -->
+    <header class="nav">
+      <div class="nav-inner">
+        <a class="logo" href="#" @click.prevent="onNav('home')">
+          AURELIA<span>CLUB</span>
+        </a>
+
+        <nav class="links">
+          <a
+            v-for="item in navItems"
+            :key="item.key"
+            href="#"
+            :class="{ active: item.key === activeNav }"
+            @click.prevent="onNav(item.key)"
+          >{{ item.label }}</a>
+        </nav>
+
+        <button v-if="permission === 0" class="admin-entry" type="button" @click="onAdmin">
+          <span class="gear">◈</span>
+          <span>后台管理系统</span>
+        </button>
+
+        <div class="user" @mouseleave="menuOpen = false">
+          <button class="user-btn" type="button" @click="menuOpen = !menuOpen">
+            <span class="avatar">{{ initial }}</span>
+            <span class="name">{{ username || '尊贵会员' }}</span>
+            <span class="caret">▾</span>
+          </button>
+          <transition name="fade">
+            <div v-if="menuOpen" class="menu">
+              <a href="#" @click.prevent="onNav('profile')">个人资料</a>
+              <a href="#" @click.prevent="onNav('settings')">账户设置</a>
+              <a class="danger" href="#" @click.prevent="onLogout">退出登录</a>
+            </div>
+          </transition>
+        </div>
+      </div>
+      <!-- 导航底部细金线 -->
+      <div class="nav-line"></div>
+    </header>
 
     <main class="main">
       <!-- ================= 搜索区（Hero） ================= -->
@@ -115,21 +146,19 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue'
 import { getHomeFeed, searchAll } from '../api.js'
-import TopNav from './TopNav.vue'
 
 const props = defineProps({
   username: { type: String, default: '' },
   // 权限：0 管理员，1 默认会员；仅管理员（0）可见后台管理系统入口
   permission: { type: Number, default: 1 }
 })
-const emit = defineEmits(['logout', 'admin', 'nav'])
+const emit = defineEmits(['logout', 'admin'])
 
 /* ---------------- 导航栏 ---------------- */
 const menuOpen = ref(false)
 const activeNav = ref('home')
 const navItems = [
-  { key: 'home', label: '首页' },
-  { key: 'auction', label: '竞拍' }
+  { key: 'home', label: '首页' }
 ]
 
 const initial = computed(() => {
